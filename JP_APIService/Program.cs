@@ -1,5 +1,8 @@
 using JP_APIService.Models;
+using JP_APIService.Service.Helper;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +52,11 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
+
+builder.Services.AddControllersWithViews();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -61,10 +69,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.GetLevel = (httpContext, elapsed, ex) => ex != null
+        ? LogEventLevel.Error
+        : httpContext.Response.StatusCode > 499
+            ? LogEventLevel.Error
+            : LogEventLevel.Information;
+});
+
 app.UseRateLimiter();
 app.UseRouting();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.Run();
