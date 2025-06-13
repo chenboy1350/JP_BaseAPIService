@@ -1,0 +1,6 @@
+@JP_APIService_HostAddress = http://localhost:5046
+
+GET {{JP_APIService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
