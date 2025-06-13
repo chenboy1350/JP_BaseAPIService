@@ -9,17 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-var apiSettings = new ApiSettingsModel();
-builder.Configuration.GetSection("ApiSettings").Bind(apiSettings);
+var AppInfo = new SwaggerInfoModel();
+builder.Configuration.GetSection("AppInfo").Bind(AppInfo);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = apiSettings.Title,
-        Version = apiSettings.Version,
-        Description = apiSettings.Description,
+        Title = AppInfo.Title,
+        Version = AppInfo.Version,
+        Description = AppInfo.Description,
     });
 });
 
@@ -64,7 +64,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{apiSettings.Title} {apiSettings.Version}");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{AppInfo.Title} {AppInfo.Version}");
         c.RoutePrefix = string.Empty;
     });
 }
