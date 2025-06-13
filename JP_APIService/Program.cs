@@ -1,7 +1,5 @@
 using JP_APIService.Models;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using System.Collections.Concurrent;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,37 +20,21 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.Configure<RateLimitingOptionsModel>(
-    builder.Configuration.GetSection("RateLimiting")
-);
+var rateLimitConfig = new RateLimitingOptionsModel();
+builder.Configuration.GetSection("RateLimiting").Bind(rateLimitConfig);
 
 builder.Services.AddRateLimiter(options =>
 {
-    var limiterCache = new ConcurrentDictionary<string, RateLimiter>();
-
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
-        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var monitor = context.RequestServices.GetRequiredService<IOptionsMonitor<RateLimitingOptionsModel>>();
-        var config = monitor.CurrentValue;
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-        return RateLimitPartition.Get(ip, _ =>
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
         {
-            if (limiterCache.TryRemove(ip, out var oldLimiter))
-            {
-                oldLimiter.Dispose();
-            }
-
-            var newLimiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = config.PermitLimit,
-                Window = TimeSpan.FromSeconds(config.WindowSeconds),
-                QueueLimit = config.QueueLimit,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-            });
-
-            limiterCache[ip] = newLimiter;
-            return newLimiter;
+            PermitLimit = rateLimitConfig.PermitLimit,
+            Window = TimeSpan.FromSeconds(rateLimitConfig.WindowSeconds),
+            QueueLimit = rateLimitConfig.QueueLimit,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         });
     });
 
@@ -60,6 +42,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.OnRejected = async (context, token) =>
     {
+        context.HttpContext.Response.StatusCode = 429;
         context.HttpContext.Response.ContentType = "application/json";
         await context.HttpContext.Response.WriteAsync(
             "{\"error\": \"Too many requests. Please try again later.\"}", token);

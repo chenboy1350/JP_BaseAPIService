@@ -11,4 +11,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Service\Implement\" />
+    <Folder Include="Service\Interface\" />
+  </ItemGroup>
+
 </Project>
