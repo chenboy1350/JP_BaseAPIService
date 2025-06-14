@@ -1,17 +1,17 @@
 ﻿using System.Diagnostics;
 
-namespace JP_APIService.Service.Helper
+namespace JP_APIService.Service
 {
-    public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+    public class RequestLoggingService(RequestDelegate next, Serilog.ILogger logger)
     {
         private readonly RequestDelegate _next = next;
-        private readonly ILogger<RequestLoggingMiddleware> _logger = logger;
+        private readonly Serilog.ILogger _logger = logger;
 
         public async Task InvokeAsync(HttpContext context)
         {
             var stopwatch = Stopwatch.StartNew();
 
-            _logger.LogInformation("[SYS] Starting request {Method} {Url} at {Timestamp}",
+            _logger.Information("[SYS] Starting request {Method} {Url} at {Timestamp}",
                 context.Request.Method,
                 context.Request.Path,
                 DateTime.UtcNow);
@@ -20,7 +20,7 @@ namespace JP_APIService.Service.Helper
 
             stopwatch.Stop();
 
-            _logger.LogInformation("[SYS] Completed request {Method} {Url} with status {StatusCode} in {ElapsedMs}ms",
+            _logger.Information("[SYS] Completed request {Method} {Url} with status {StatusCode} in {ElapsedMs}ms",
                 context.Request.Method,
                 context.Request.Path,
                 context.Response.StatusCode,

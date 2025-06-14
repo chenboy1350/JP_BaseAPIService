@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace JP_APIService.Controllers
 {
@@ -9,6 +10,7 @@ namespace JP_APIService.Controllers
         private readonly Serilog.ILogger _logger = logger;
 
         [HttpGet("Index")]
+        [Authorize]
         public IActionResult Index()
         {
             _logger.Information("TEST LOG Index");
