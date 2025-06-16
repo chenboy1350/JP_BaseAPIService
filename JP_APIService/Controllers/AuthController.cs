@@ -1,23 +1,23 @@
 ﻿using JP_APIService.Service;
 using Microsoft.AspNetCore.Mvc;
-using SimpleJWT.Model;
+using JP_APIService.Model;
+using JP_APIService.Models;
 
 namespace JP_APIService.Controllers
 {
     [ApiController]
     [Route("api/auth")]
-    public class AuthController(TokenService tokenService, IConfiguration configuration) : Controller
+    public class AuthController(AccessTokenService tokenService, IConfiguration configuration) : Controller
     {
-        private readonly TokenService _tokenService = tokenService;
+        private readonly AccessTokenService _tokenService = tokenService;
         private readonly IConfiguration _configuration = configuration;
 
-
         [HttpPost("TryToGetToken")]
-        public IActionResult TryToGetToken([FromBody] TryAuthModel model)
+        public IActionResult TryToGetToken([FromBody] AuthRequestModel model)
         {
-            if (string.IsNullOrEmpty(model.ClientId))
+            if (string.IsNullOrEmpty(model.ClientId) || string.IsNullOrEmpty(model.ClientSecret))
             {
-                return BadRequest("ClientId is required.");
+                return BadRequest("ClientId & ClientSecret is required.");
             }
 
             var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -34,9 +34,13 @@ namespace JP_APIService.Controllers
 
             if (decodedHeader == expected)
             {
-                var token = _tokenService.GenerateToken(model.ClientId);
-
-                return Ok(new { Token = token });
+                var expirationMinutes = int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "30");
+                var response = new AuthResponseModel
+                {
+                    AccessToken = _tokenService.GenerateToken(ClientId),
+                    ExpiresIn = expirationMinutes * 60,
+                };
+                return Ok(response);
             }
             else
             {
@@ -44,8 +48,8 @@ namespace JP_APIService.Controllers
             }
         }
 
-        [HttpPost("GetToken")]
-        public IActionResult GetToken([FromBody] AuthModel model)
+        [HttpPost("AccessToken")]
+        public IActionResult AccessToken([FromBody] AuthRequestModel model)
         {
             try
             {
@@ -78,8 +82,13 @@ namespace JP_APIService.Controllers
 
                 if (decodedHeader == expected)
                 {
-                    var token = _tokenService.GenerateToken(ClientId);
-                    return Ok(new { Token = token });
+                    var expirationMinutes = int.Parse(jwtSettings["AccessTokenExpirationMinutes"] ?? "30");
+                    var response = new AuthResponseModel
+                    {
+                        AccessToken = _tokenService.GenerateToken(ClientId),
+                        ExpiresIn = expirationMinutes * 60,
+                    };
+                    return Ok(response);
                 }
                 else
                 {

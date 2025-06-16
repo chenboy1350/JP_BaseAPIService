@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers().AddXmlSerializerFormatters();
 
-builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<AccessTokenService>();
 
 builder.Services
     .AddOptions<ApiKeySettingsModel>()

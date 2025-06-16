@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JP_APIService.Service
 {
-    public class TokenService(IConfiguration configuration)
+    public class AccessTokenService(IConfiguration configuration)
     {
         private readonly IConfiguration _configuration = configuration;
 
@@ -15,7 +15,7 @@ namespace JP_APIService.Service
             {
                 var jwtSettings = _configuration.GetSection("JwtSettings");
                 var secretKeyValue = jwtSettings["SecretKey"];
-                var tokenExpirationInMinutes = jwtSettings["TokenExpirationInMinutes"];
+                var tokenExpirationInMinutes = jwtSettings["AccessTokenExpirationMinutes"];
 
                 if (string.IsNullOrEmpty(secretKeyValue))
                 {

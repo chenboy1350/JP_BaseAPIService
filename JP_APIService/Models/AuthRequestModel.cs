@@ -1,14 +1,9 @@
-﻿namespace SimpleJWT.Model
+﻿namespace JP_APIService.Model
 {
-    public class AuthModel
+    public class AuthRequestModel
     {
         public string? Header { get; set; }
-    }
-
-    public class TryAuthModel
-    {
         public string? ClientId { get; set; }
-
         public string? ClientSecret { get; set; }
     }
 }
