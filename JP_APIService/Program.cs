@@ -10,9 +10,16 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddXmlSerializerFormatters();
 
 builder.Services.AddScoped<TokenService>();
+
+builder.Services
+    .AddOptions<ApiKeySettingsModel>()
+    .Bind(builder.Configuration.GetSection("ApiKeySettings"))
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Key), "API key is required.")
+    .ValidateOnStart();
+
 
 var AppInfo = new SwaggerInfoModel();
 builder.Configuration.GetSection("AppInfo").Bind(AppInfo);
@@ -25,6 +32,14 @@ builder.Services.AddSwaggerGen(options =>
         Title = AppInfo.Title,
         Version = AppInfo.Version,
         Description = AppInfo.Description,
+    });
+    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Description = "API Key required in header (X-API-KEY)",
+        Name = "X-API-KEY",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "ApiKeyScheme"
     });
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -44,6 +59,17 @@ builder.Services.AddSwaggerGen(options =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
                 }
             },
             Array.Empty<string>()
@@ -164,12 +190,17 @@ app.UseSerilogRequestLogging(options =>
 });
 
 app.UseRateLimiter();
+
 app.UseRouting();
+
 app.UseHttpsRedirection();
+
+app.UseMiddleware<ApiKeyService>();
+app.UseMiddleware<RequestLoggingService>();
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
-app.UseMiddleware<RequestLoggingService>();
+app.MapControllers();
 
 app.Run();
