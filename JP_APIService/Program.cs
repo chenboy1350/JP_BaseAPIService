@@ -26,23 +26,23 @@ builder.Services.AddSwaggerGen(options =>
         Version = AppInfo.Version,
         Description = AppInfo.Description,
     });
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        In = ParameterLocation.Header,
         Description = "Enter 'Bearer' followed by a space and the token."
     });
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -108,6 +108,33 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        options.AddPolicy("JPCorsPolicyDev", policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    }
+    else
+    {
+        options.AddPolicy("JPCorsPolicyProd", policy =>
+        //{
+        //    policy.WithOrigins("https://www.JP.com/")
+        //          .AllowAnyMethod()
+        //          .AllowAnyHeader();
+        //});
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    }
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -118,6 +145,12 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v1/swagger.json", $"{AppInfo.Title} {AppInfo.Version}");
         options.RoutePrefix = string.Empty;
     });
+
+    app.UseCors("JPCorsPolicyDev");
+}
+else
+{
+    app.UseCors("JPCorsPolicyProd");
 }
 
 app.UseSerilogRequestLogging(options =>
